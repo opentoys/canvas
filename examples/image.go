@@ -5,12 +5,11 @@ import (
 	"math"
 	"os"
 
-	"github.com/tfriedel6/canvas"
-	"github.com/tfriedel6/canvas/backend/softwarebackend"
+	"github.com/opentoys/canvas"
 )
 
 func main() {
-	backend := softwarebackend.New(720, 720)
+	backend := canvas.NewSoftware(720, 720)
 	cv := canvas.New(backend)
 
 	w, h := float64(cv.Width()), float64(cv.Height())

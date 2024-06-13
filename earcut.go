@@ -3,8 +3,6 @@ package canvas
 import (
 	"math"
 	"sort"
-
-	"github.com/tfriedel6/canvas/backend/backendbase"
 )
 
 // Go port of https://github.com/mapbox/earcut.hpp
@@ -38,7 +36,7 @@ type earcut struct {
 	nodes      []node
 }
 
-func (ec *earcut) run(points [][]backendbase.Vec) {
+func (ec *earcut) run(points [][]BackendVec) {
 	if len(points) == 0 {
 		return
 	}
@@ -98,7 +96,7 @@ func (ec *earcut) run(points [][]backendbase.Vec) {
 }
 
 // create a circular doubly linked list from polygon points in the specified winding order
-func (ec *earcut) linkedList(points []backendbase.Vec, clockwise bool) *node {
+func (ec *earcut) linkedList(points []BackendVec, clockwise bool) *node {
 	var sum float64
 	ln := len(points)
 	var i, j int
@@ -361,7 +359,7 @@ func (ec *earcut) splitEarcut(start *node) {
 }
 
 // link every hole into the outer loop, producing a single-ring polygon without holes
-func (ec *earcut) eliminateHoles(points [][]backendbase.Vec, outerNode *node) *node {
+func (ec *earcut) eliminateHoles(points [][]BackendVec, outerNode *node) *node {
 	ln := len(points)
 
 	queue := make([]*node, 0, ln)
@@ -769,7 +767,7 @@ func (ec *earcut) splitPolygon(a, b *node) *node {
 }
 
 // create a node and util::optionally link it with previous one (in a circular doubly linked list)
-func (ec *earcut) insertNode(i int, pt backendbase.Vec, last *node) *node {
+func (ec *earcut) insertNode(i int, pt BackendVec, last *node) *node {
 	ec.nodes = append(ec.nodes, node{i: i, x: pt[0], y: pt[1]})
 	p := &ec.nodes[len(ec.nodes)-1]
 
@@ -806,7 +804,7 @@ func (ec *earcut) removeNode(p *node) {
 // it contains an index of an outer contour followed by
 // any number of indices of hole contours followed by
 // a terminating -1
-func sortFontContours(contours [][]backendbase.Vec) []int {
+func sortFontContours(contours [][]BackendVec) []int {
 	type cut struct {
 		idx   int
 		count int

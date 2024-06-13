@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/golang/freetype/truetype"
-	"github.com/tfriedel6/canvas/backend/backendbase"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
@@ -20,7 +19,7 @@ import (
 // Canvas represents an area on the viewport on which to draw
 // using a set of functions very similar to the HTML5 canvas
 type Canvas struct {
-	b backendbase.Backend
+	b Backend
 
 	path Path2D
 
@@ -33,11 +32,11 @@ type Canvas struct {
 	fontPathCache map[*Font]*fontPathCache
 	fontTriCache  map[*Font]*fontTriCache
 
-	shadowBuf []backendbase.Vec
+	shadowBuf []BackendVec
 }
 
 type drawState struct {
-	transform     backendbase.Mat
+	transform     BackendMat
 	fill          drawStyle
 	stroke        drawStyle
 	font          *Font
@@ -138,7 +137,7 @@ var Performance = struct {
 // While all functions on the canvas use the top left point as
 // the origin, since GL uses the bottom left coordinate, the
 // coordinates given here also use the bottom left as origin
-func New(backend backendbase.Backend) *Canvas {
+func New(backend Backend) *Canvas {
 	cv := &Canvas{
 		b:             backend,
 		stateStack:    make([]drawState, 0, 20),
@@ -154,7 +153,7 @@ func New(backend backendbase.Backend) *Canvas {
 	cv.state.globalAlpha = 1
 	cv.state.fill.color = color.RGBA{A: 255}
 	cv.state.stroke.color = color.RGBA{A: 255}
-	cv.state.transform = backendbase.MatIdentity
+	cv.state.transform = BackendMatIdentity
 	cv.path.cv = cv
 	return cv
 }
@@ -174,7 +173,7 @@ func (cv *Canvas) Height() int {
 // Size returns the internal width and height of the canvas
 func (cv *Canvas) Size() (int, int) { return cv.b.Size() }
 
-func (cv *Canvas) tf(v backendbase.Vec) backendbase.Vec {
+func (cv *Canvas) tf(v BackendVec) BackendVec {
 	return v.MulMat(cv.state.transform)
 }
 
@@ -239,8 +238,8 @@ func (cv *Canvas) parseStyle(value ...interface{}) drawStyle {
 	return style
 }
 
-func (cv *Canvas) backendFillStyle(s *drawStyle, alpha float64) backendbase.FillStyle {
-	stl := backendbase.FillStyle{Color: s.color}
+func (cv *Canvas) backendFillStyle(s *drawStyle, alpha float64) BackendFillStyle {
+	stl := BackendFillStyle{Color: s.color}
 	alpha *= cv.state.globalAlpha
 	if lg := s.linearGradient; lg != nil {
 		lg.load()
@@ -384,7 +383,7 @@ func (cv *Canvas) Restore() {
 	cv.b.ClearClip()
 	for _, st := range cv.stateStack {
 		if len(st.clip.p) > 0 {
-			cv.clip(&st.clip, backendbase.MatIdentity)
+			cv.clip(&st.clip, BackendMatIdentity)
 		}
 	}
 	cv.state = cv.stateStack[l-1]
@@ -393,27 +392,27 @@ func (cv *Canvas) Restore() {
 
 // Scale updates the current transformation with a scaling by the given values
 func (cv *Canvas) Scale(x, y float64) {
-	cv.state.transform = backendbase.MatScale(backendbase.Vec{x, y}).Mul(cv.state.transform)
+	cv.state.transform = BackendMatScale(BackendVec{x, y}).Mul(cv.state.transform)
 }
 
 // Translate updates the current transformation with a translation by the given values
 func (cv *Canvas) Translate(x, y float64) {
-	cv.state.transform = backendbase.MatTranslate(backendbase.Vec{x, y}).Mul(cv.state.transform)
+	cv.state.transform = BackendMatTranslate(BackendVec{x, y}).Mul(cv.state.transform)
 }
 
 // Rotate updates the current transformation with a rotation by the given angle
 func (cv *Canvas) Rotate(angle float64) {
-	cv.state.transform = backendbase.MatRotate(angle).Mul(cv.state.transform)
+	cv.state.transform = BackendMatRotate(angle).Mul(cv.state.transform)
 }
 
 // Transform updates the current transformation with the given matrix
 func (cv *Canvas) Transform(a, b, c, d, e, f float64) {
-	cv.state.transform = backendbase.Mat{a, b, c, d, e, f}.Mul(cv.state.transform)
+	cv.state.transform = BackendMat{a, b, c, d, e, f}.Mul(cv.state.transform)
 }
 
 // SetTransform replaces the current transformation with the given matrix
 func (cv *Canvas) SetTransform(a, b, c, d, e, f float64) {
-	cv.state.transform = backendbase.Mat{a, b, c, d, e, f}
+	cv.state.transform = BackendMat{a, b, c, d, e, f}
 }
 
 // SetShadowColor sets the color of the shadow. If it is fully transparent (default)
@@ -459,15 +458,15 @@ func (cv *Canvas) IsPointInStroke(x, y float64) bool {
 		return false
 	}
 
-	var triBuf [500]backendbase.Vec
+	var triBuf [500]BackendVec
 	tris := cv.strokeTris(&cv.path, cv.state.transform, cv.state.transform.Invert(), true, triBuf[:0])
 
-	pt := backendbase.Vec{x, y}
+	pt := BackendVec{x, y}
 
 	for i := 0; i < len(tris); i += 3 {
-		a := backendbase.Vec{tris[i][0], tris[i][1]}
-		b := backendbase.Vec{tris[i+1][0], tris[i+1][1]}
-		c := backendbase.Vec{tris[i+2][0], tris[i+2][1]}
+		a := BackendVec{tris[i][0], tris[i][1]}
+		b := BackendVec{tris[i+1][0], tris[i+1][1]}
+		c := BackendVec{tris[i+2][0], tris[i+2][1]}
 		if triangleContainsPoint(a, b, c, pt) {
 			return true
 		}

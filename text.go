@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	"io/ioutil"
 	"math"
 	"os"
 	"time"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
-	"github.com/tfriedel6/canvas/backend/backendbase"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
@@ -49,7 +47,7 @@ func (fpc *fontPathCache) size() int {
 }
 
 type fontTriCache struct {
-	cache    map[truetype.Index][]backendbase.Vec
+	cache    map[truetype.Index][]BackendVec
 	lastUsed time.Time
 }
 
@@ -84,7 +82,7 @@ func (cv *Canvas) LoadFont(src interface{}) (*Font, error) {
 	case *truetype.Font:
 		f = &Font{font: v}
 	case string:
-		data, err := ioutil.ReadFile(v)
+		data, err := os.ReadFile(v)
 		if err != nil {
 			return nil, err
 		}
@@ -148,8 +146,8 @@ func (cv *Canvas) FillText(str string, x, y float64) {
 		return
 	}
 
-	scaleX := backendbase.Vec{cv.state.transform[0], cv.state.transform[1]}.Len()
-	scaleY := backendbase.Vec{cv.state.transform[2], cv.state.transform[3]}.Len()
+	scaleX := BackendVec{cv.state.transform[0], cv.state.transform[1]}.Len()
+	scaleY := BackendVec{cv.state.transform[2], cv.state.transform[3]}.Len()
 	scale := (scaleX + scaleY) * 0.5
 	fontSize := fixed.Int26_6(math.Round(float64(cv.state.fontSize) * scale))
 
@@ -228,11 +226,11 @@ func (cv *Canvas) FillText(str string, x, y float64) {
 	}
 
 	// render textImage to the screen
-	var pts [4]backendbase.Vec
-	pts[0] = cv.tf(backendbase.Vec{float64(textOffset.X)/scale + x, float64(textOffset.Y)/scale + y})
-	pts[1] = cv.tf(backendbase.Vec{float64(textOffset.X)/scale + x, float64(textOffset.Y)/scale + float64(strHeight)/scale + y})
-	pts[2] = cv.tf(backendbase.Vec{float64(textOffset.X)/scale + float64(strWidth)/scale + x, float64(textOffset.Y)/scale + float64(strHeight)/scale + y})
-	pts[3] = cv.tf(backendbase.Vec{float64(textOffset.X)/scale + float64(strWidth)/scale + x, float64(textOffset.Y)/scale + y})
+	var pts [4]BackendVec
+	pts[0] = cv.tf(BackendVec{float64(textOffset.X)/scale + x, float64(textOffset.Y)/scale + y})
+	pts[1] = cv.tf(BackendVec{float64(textOffset.X)/scale + x, float64(textOffset.Y)/scale + float64(strHeight)/scale + y})
+	pts[2] = cv.tf(BackendVec{float64(textOffset.X)/scale + float64(strWidth)/scale + x, float64(textOffset.Y)/scale + float64(strHeight)/scale + y})
+	pts[3] = cv.tf(BackendVec{float64(textOffset.X)/scale + float64(strWidth)/scale + x, float64(textOffset.Y)/scale + y})
 
 	mask := textImage.SubImage(image.Rect(0, 0, strWidth, strHeight)).(*image.Alpha)
 
@@ -256,7 +254,7 @@ func (cv *Canvas) fillText2(str string, x, y float64) {
 	}
 
 	scale := float64(cv.state.fontSize) / float64(baseFontSize)
-	scaleMat := backendbase.MatScale(backendbase.Vec{scale, scale})
+	scaleMat := BackendMatScale(BackendVec{scale, scale})
 
 	prev, hasPrev := truetype.Index(0), false
 	for _, rn := range str {
@@ -278,7 +276,7 @@ func (cv *Canvas) fillText2(str string, x, y float64) {
 		}
 
 		tris := cv.runeTris(rn)
-		tf := scaleMat.Mul(backendbase.MatTranslate(backendbase.Vec{x, y})).Mul(cv.state.transform)
+		tf := scaleMat.Mul(BackendMatTranslate(BackendVec{x, y})).Mul(cv.state.transform)
 		cv.drawShadow(tris, nil, false)
 		stl := cv.backendFillStyle(&cv.state.fill, 1)
 		cv.b.Fill(&stl, tris, tf, false)
@@ -305,7 +303,7 @@ func (cv *Canvas) StrokeText(str string, x, y float64) {
 	}
 
 	scale := float64(cv.state.fontSize) / float64(baseFontSize)
-	scaleMat := backendbase.MatScale(backendbase.Vec{scale, scale})
+	scaleMat := BackendMatScale(BackendVec{scale, scale})
 
 	prev, hasPrev := truetype.Index(0), false
 	for _, rn := range str {
@@ -327,8 +325,8 @@ func (cv *Canvas) StrokeText(str string, x, y float64) {
 		}
 
 		path := cv.runePath(rn)
-		tf := scaleMat.Mul(backendbase.MatTranslate(backendbase.Vec{x, y})).Mul(cv.state.transform)
-		cv.strokePath(path, tf, backendbase.Mat{}, false)
+		tf := scaleMat.Mul(BackendMatTranslate(BackendVec{x, y})).Mul(cv.state.transform)
+		cv.strokePath(path, tf, BackendMat{}, false)
 
 		x += float64(advance) / 64
 	}
@@ -423,10 +421,10 @@ func (cv *Canvas) measureTextRendering(str string, x, y *float64, frc *frContext
 		w, h := cv.b.Size()
 		fw, fh := float64(w), float64(h)
 
-		p0 := cv.tf(backendbase.Vec{float64(bounds.Min.X)/scale + curX, float64(strMinY)/scale + *y})
-		p1 := cv.tf(backendbase.Vec{float64(bounds.Min.X)/scale + curX, float64(strMaxY)/scale + *y})
-		p2 := cv.tf(backendbase.Vec{float64(bounds.Max.X)/scale + curX, float64(strMaxY)/scale + *y})
-		p3 := cv.tf(backendbase.Vec{float64(bounds.Max.X)/scale + curX, float64(strMinY)/scale + *y})
+		p0 := cv.tf(BackendVec{float64(bounds.Min.X)/scale + curX, float64(strMinY)/scale + *y})
+		p1 := cv.tf(BackendVec{float64(bounds.Min.X)/scale + curX, float64(strMaxY)/scale + *y})
+		p2 := cv.tf(BackendVec{float64(bounds.Max.X)/scale + curX, float64(strMaxY)/scale + *y})
+		p3 := cv.tf(BackendVec{float64(bounds.Max.X)/scale + curX, float64(strMinY)/scale + *y})
 		inside := (p0[0] >= 0 || p1[0] >= 0 || p2[0] >= 0 || p3[0] >= 0) &&
 			(p0[1] >= 0 || p1[1] >= 0 || p2[1] >= 0 || p3[1] >= 0) &&
 			(p0[0] < fw || p1[0] < fw || p2[0] < fw || p3[0] < fw) &&
@@ -458,7 +456,7 @@ func (cv *Canvas) measureTextRendering(str string, x, y *float64, frc *frContext
 		p = fixed.Point26_6{}
 		prev, hasPrev = truetype.Index(0), false
 		textOffset = image.Point{}
-		strWidth, strMaxY = 0, 0
+		strMaxY = 0
 		for i, rn := range str {
 			idx := frc.f.Index(rn)
 			if idx == 0 {
@@ -585,7 +583,7 @@ func (cv *Canvas) runePath(rn rune) *Path2D {
 	return path
 }
 
-func (cv *Canvas) runeTris(rn rune) []backendbase.Vec {
+func (cv *Canvas) runeTris(rn rune) []BackendVec {
 	idx := cv.state.font.font.Index(rn)
 	if idx == 0 {
 		idx = cv.state.font.font.Index(' ')
@@ -603,7 +601,7 @@ func (cv *Canvas) runeTris(rn rune) []backendbase.Vec {
 	var gb truetype.GlyphBuf
 	gb.Load(cv.state.font.font, baseFontSize, idx, font.HintingFull)
 
-	contours := make([][]backendbase.Vec, 0, len(gb.Ends))
+	contours := make([][]BackendVec, 0, len(gb.Ends))
 
 	from := 0
 	for _, to := range gb.Ends {
@@ -659,7 +657,7 @@ func (cv *Canvas) runeTris(rn rune) []backendbase.Vec {
 		}
 		path.ClosePath()
 
-		contour := make([]backendbase.Vec, len(path.p))
+		contour := make([]BackendVec, len(path.p))
 		for i, pt := range path.p {
 			contour[i] = pt.pos
 		}
@@ -670,8 +668,8 @@ func (cv *Canvas) runeTris(rn rune) []backendbase.Vec {
 	}
 
 	idxs := sortFontContours(contours)
-	sortedContours := make([][]backendbase.Vec, 0, len(idxs))
-	trisList := make([][]backendbase.Vec, 0, len(contours))
+	sortedContours := make([][]BackendVec, 0, len(idxs))
+	trisList := make([][]BackendVec, 0, len(contours))
 
 	for i := 0; i < len(idxs); {
 		var j int
@@ -689,7 +687,7 @@ func (cv *Canvas) runeTris(rn rune) []backendbase.Vec {
 		var ec earcut
 		ec.run(sortedContours)
 
-		tris := make([]backendbase.Vec, len(ec.indices))
+		tris := make([]BackendVec, len(ec.indices))
 		for i, idx := range ec.indices {
 			pidx := 0
 			poly := sortedContours[pidx]
@@ -710,7 +708,7 @@ func (cv *Canvas) runeTris(rn rune) []backendbase.Vec {
 		count += len(tris)
 	}
 
-	allTris := make([]backendbase.Vec, count)
+	allTris := make([]BackendVec, count)
 	pos := 0
 	for _, tris := range trisList {
 		copy(allTris[pos:], tris)
@@ -719,7 +717,7 @@ func (cv *Canvas) runeTris(rn rune) []backendbase.Vec {
 
 	cache, ok := cv.fontTriCache[cv.state.font]
 	if !ok {
-		cache = &fontTriCache{cache: make(map[truetype.Index][]backendbase.Vec, 1024)}
+		cache = &fontTriCache{cache: make(map[truetype.Index][]BackendVec, 1024)}
 		cv.fontTriCache[cv.state.font] = cache
 	}
 	cache.lastUsed = time.Now()

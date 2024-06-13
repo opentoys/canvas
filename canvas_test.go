@@ -11,40 +11,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-gl/gl/v3.2-core/gl"
-	"github.com/tfriedel6/canvas"
-	"github.com/tfriedel6/canvas/backend/softwarebackend"
-	"github.com/tfriedel6/canvas/sdlcanvas"
+	"github.com/opentoys/canvas"
 )
 
 var usesw = false
 
 func run(t *testing.T, fn func(cv *canvas.Canvas)) {
 	var img *image.RGBA
-	if !usesw {
-		wnd, cv, err := sdlcanvas.CreateWindow(100, 100, "test")
-		if err != nil {
-			t.Fatalf("Failed to create window: %v", err)
-			return
-		}
-		defer wnd.Destroy()
+	backend := canvas.NewSoftware(100, 100)
+	cv := canvas.New(backend)
 
-		gl.Disable(gl.MULTISAMPLE)
-
-		wnd.StartFrame()
-
-		cv.ClearRect(0, 0, 100, 100)
-		fn(cv)
-		img = cv.GetImageData(0, 0, 100, 100)
-	} else {
-		backend := softwarebackend.New(100, 100)
-		cv := canvas.New(backend)
-
-		cv.SetFillStyle("#000")
-		cv.FillRect(0, 0, 100, 100)
-		fn(cv)
-		img = cv.GetImageData(0, 0, 100, 100)
-	}
+	cv.SetFillStyle("#000")
+	cv.FillRect(0, 0, 100, 100)
+	fn(cv)
+	img = cv.GetImageData(0, 0, 100, 100)
 
 	caller, _, _, ok := runtime.Caller(1)
 	if !ok {

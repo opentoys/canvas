@@ -3,8 +3,6 @@ package canvas
 import (
 	"image/color"
 	"runtime"
-
-	"github.com/tfriedel6/canvas/backend/backendbase"
 )
 
 // LinearGradient is a gradient with any number of
@@ -13,12 +11,12 @@ import (
 // will correspond to a straight line
 type LinearGradient struct {
 	cv       *Canvas
-	from, to backendbase.Vec
+	from, to BackendVec
 	created  bool
 	loaded   bool
 	opaque   bool
-	grad     backendbase.LinearGradient
-	data     backendbase.Gradient
+	grad     BackendLinearGradient
+	data     BackendGradient
 }
 
 // RadialGradient is a gradient with any number of
@@ -27,14 +25,14 @@ type LinearGradient struct {
 // will correspond to a circle
 type RadialGradient struct {
 	cv       *Canvas
-	from, to backendbase.Vec
+	from, to BackendVec
 	radFrom  float64
 	radTo    float64
 	created  bool
 	loaded   bool
 	opaque   bool
-	grad     backendbase.RadialGradient
-	data     backendbase.Gradient
+	grad     BackendRadialGradient
+	data     BackendGradient
 }
 
 // CreateLinearGradient creates a new linear gradient with
@@ -44,9 +42,9 @@ func (cv *Canvas) CreateLinearGradient(x0, y0, x1, y1 float64) *LinearGradient {
 	lg := &LinearGradient{
 		cv:     cv,
 		opaque: true,
-		from:   backendbase.Vec{x0, y0},
-		to:     backendbase.Vec{x1, y1},
-		data:   make(backendbase.Gradient, 0, 20),
+		from:   BackendVec{x0, y0},
+		to:     BackendVec{x1, y1},
+		data:   make(BackendGradient, 0, 20),
 	}
 	runtime.SetFinalizer(lg, func(*LinearGradient) {
 		lg.grad.Delete()
@@ -62,11 +60,11 @@ func (cv *Canvas) CreateRadialGradient(x0, y0, r0, x1, y1, r1 float64) *RadialGr
 	rg := &RadialGradient{
 		cv:      cv,
 		opaque:  true,
-		from:    backendbase.Vec{x0, y0},
-		to:      backendbase.Vec{x1, y1},
+		from:    BackendVec{x0, y0},
+		to:      BackendVec{x1, y1},
 		radFrom: r0,
 		radTo:   r1,
-		data:    make(backendbase.Gradient, 0, 20),
+		data:    make(BackendGradient, 0, 20),
 	}
 	runtime.SetFinalizer(rg, func(*RadialGradient) {
 		rg.grad.Delete()
@@ -126,7 +124,7 @@ func (rg *RadialGradient) AddColorStop(pos float64, stopColor ...interface{}) {
 	rg.loaded = false
 }
 
-func addColorStop(stops backendbase.Gradient, pos float64, stopColor ...interface{}) (backendbase.Gradient, color.RGBA) {
+func addColorStop(stops BackendGradient, pos float64, stopColor ...interface{}) (BackendGradient, color.RGBA) {
 	c, _ := parseColor(stopColor...)
 	insert := len(stops)
 	for i, stop := range stops {
@@ -135,10 +133,10 @@ func addColorStop(stops backendbase.Gradient, pos float64, stopColor ...interfac
 			break
 		}
 	}
-	stops = append(stops, backendbase.GradientStop{})
+	stops = append(stops, BackendGradientStop{})
 	if insert < len(stops)-1 {
 		copy(stops[insert+1:], stops[insert:len(stops)-1])
 	}
-	stops[insert] = backendbase.GradientStop{Pos: pos, Color: c}
+	stops[insert] = BackendGradientStop{Pos: pos, Color: c}
 	return stops, c
 }

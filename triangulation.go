@@ -3,13 +3,11 @@ package canvas
 import (
 	"math"
 	"sort"
-
-	"github.com/tfriedel6/canvas/backend/backendbase"
 )
 
 const samePointTolerance = 1e-20
 
-func pointIsRightOfLine(a, b, p backendbase.Vec) (bool, bool) {
+func pointIsRightOfLine(a, b, p BackendVec) (bool, bool) {
 	if a[1] == b[1] {
 		return false, false
 	}
@@ -27,7 +25,7 @@ func pointIsRightOfLine(a, b, p backendbase.Vec) (bool, bool) {
 	return p[0] > x, dir
 }
 
-func triangleContainsPoint(a, b, c, p backendbase.Vec) bool {
+func triangleContainsPoint(a, b, c, p BackendVec) bool {
 	// if point is outside triangle bounds, return false
 	if p[0] < a[0] && p[0] < b[0] && p[0] < c[0] {
 		return false
@@ -58,12 +56,12 @@ func triangleContainsPoint(a, b, c, p backendbase.Vec) bool {
 
 const parallelTolerance = 1e-10
 
-func parallel(a1, b1, a2, b2 backendbase.Vec) bool {
+func parallel(a1, b1, a2, b2 BackendVec) bool {
 	ang := b1.Sub(a1).AngleTo(b2.Sub(a2))
 	return math.Abs(ang) < parallelTolerance || math.Abs(ang-math.Pi) < parallelTolerance
 }
 
-func polygonContainsLine(polygon []backendbase.Vec, ia, ib int, a, b backendbase.Vec) bool {
+func polygonContainsLine(polygon []BackendVec, ia, ib int, a, b BackendVec) bool {
 	for i := range polygon {
 		if i == ia || i == ib {
 			continue
@@ -82,7 +80,7 @@ func polygonContainsLine(polygon []backendbase.Vec, ia, ib int, a, b backendbase
 
 const onLineToleranceSqr = 1e-20
 
-func polygonContainsPoint(polygon []backendbase.Vec, p backendbase.Vec) bool {
+func polygonContainsPoint(polygon []BackendVec, p BackendVec) bool {
 	a := polygon[len(polygon)-1]
 	count := 0
 	for _, b := range polygon {
@@ -97,12 +95,12 @@ func polygonContainsPoint(polygon []backendbase.Vec, p backendbase.Vec) bool {
 	return count%2 == 1
 }
 
-func triangulatePath(path []pathPoint, mat backendbase.Mat, target []backendbase.Vec) []backendbase.Vec {
+func triangulatePath(path []pathPoint, mat BackendMat, target []BackendVec) []BackendVec {
 	if path[0].pos == path[len(path)-1].pos {
 		path = path[:len(path)-1]
 	}
 
-	var buf [500]backendbase.Vec
+	var buf [500]BackendVec
 	polygon := buf[:0]
 	for _, p := range path {
 		polygon = append(polygon, p.pos.MulMat(mat))
@@ -158,7 +156,7 @@ type tessNet struct {
 }
 
 type tessVert struct {
-	pos      backendbase.Vec
+	pos      BackendVec
 	attached []int
 	count    int
 }
@@ -185,7 +183,7 @@ func cutIntersections(path []pathPoint) tessNet {
 	type cut struct {
 		from, to int
 		ratio    float64
-		point    backendbase.Vec
+		point    BackendVec
 	}
 
 	var cutBuf [50]cut
@@ -288,7 +286,7 @@ func cutIntersections(path []pathPoint) tessNet {
 				attachedBuf = append(attachedBuf, j)
 			}
 		}
-		verts[i].attached = attachedBuf[pos:len(attachedBuf)]
+		verts[i].attached = attachedBuf[pos:]
 		pos = len(attachedBuf)
 	}
 

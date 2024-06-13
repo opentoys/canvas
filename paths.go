@@ -2,8 +2,6 @@ package canvas
 
 import (
 	"math"
-
-	"github.com/tfriedel6/canvas/backend/backendbase"
 )
 
 // BeginPath clears the current path and starts a new one
@@ -14,19 +12,19 @@ func (cv *Canvas) BeginPath() {
 	cv.path.p = cv.path.p[:0]
 }
 
-func isSamePoint(a, b backendbase.Vec, maxDist float64) bool {
+func isSamePoint(a, b BackendVec, maxDist float64) bool {
 	return math.Abs(b[0]-a[0]) <= maxDist && math.Abs(b[1]-a[1]) <= maxDist
 }
 
 // MoveTo adds a gap and moves the end of the path to x/y
 func (cv *Canvas) MoveTo(x, y float64) {
-	tf := cv.tf(backendbase.Vec{x, y})
+	tf := cv.tf(BackendVec{x, y})
 	cv.path.MoveTo(tf[0], tf[1])
 }
 
 // LineTo adds a line to the end of the path
 func (cv *Canvas) LineTo(x, y float64) {
-	tf := cv.tf(backendbase.Vec{x, y})
+	tf := cv.tf(BackendVec{x, y})
 	cv.path.LineTo(tf[0], tf[1])
 }
 
@@ -35,7 +33,7 @@ func (cv *Canvas) LineTo(x, y float64) {
 // means that the line is added anticlockwise
 func (cv *Canvas) Arc(x, y, radius, startAngle, endAngle float64, anticlockwise bool) {
 	ax, ay := math.Sincos(startAngle)
-	startAngle2 := backendbase.Vec{ay, ax}.MulMat2(cv.state.transform.Mat2()).Atan2()
+	startAngle2 := BackendVec{ay, ax}.MulMat2(cv.state.transform.Mat2()).Atan2()
 	endAngle2 := startAngle2 + (endAngle - startAngle)
 	cv.path.arc(x, y, radius, startAngle2, endAngle2, anticlockwise, cv.state.transform, false)
 }
@@ -51,17 +49,17 @@ func (cv *Canvas) ArcTo(x1, y1, x2, y2, radius float64) {
 // QuadraticCurveTo adds a quadratic curve to the path. It uses the current end
 // point of the path, x1/y1 defines the curve, and x2/y2 is the end point
 func (cv *Canvas) QuadraticCurveTo(x1, y1, x2, y2 float64) {
-	tf1 := cv.tf(backendbase.Vec{x1, y1})
-	tf2 := cv.tf(backendbase.Vec{x2, y2})
+	tf1 := cv.tf(BackendVec{x1, y1})
+	tf2 := cv.tf(BackendVec{x2, y2})
 	cv.path.QuadraticCurveTo(tf1[0], tf1[1], tf2[0], tf2[1])
 }
 
 // BezierCurveTo adds a bezier curve to the path. It uses the current end point
 // of the path, x1/y1 and x2/y2 define the curve, and x3/y3 is the end point
 func (cv *Canvas) BezierCurveTo(x1, y1, x2, y2, x3, y3 float64) {
-	tf1 := cv.tf(backendbase.Vec{x1, y1})
-	tf2 := cv.tf(backendbase.Vec{x2, y2})
-	tf3 := cv.tf(backendbase.Vec{x3, y3})
+	tf1 := cv.tf(BackendVec{x1, y1})
+	tf2 := cv.tf(BackendVec{x2, y2})
+	tf3 := cv.tf(BackendVec{x3, y3})
 	cv.path.BezierCurveTo(tf1[0], tf1[1], tf2[0], tf2[1], tf3[0], tf3[1])
 }
 
@@ -71,9 +69,9 @@ func (cv *Canvas) BezierCurveTo(x1, y1, x2, y2, x3, y3 float64) {
 // are angles in radians, and anticlockwise means that the line is added
 // anticlockwise
 func (cv *Canvas) Ellipse(x, y, radiusX, radiusY, rotation, startAngle, endAngle float64, anticlockwise bool) {
-	tf := cv.tf(backendbase.Vec{x, y})
+	tf := cv.tf(BackendVec{x, y})
 	ax, ay := math.Sincos(startAngle)
-	startAngle2 := backendbase.Vec{ay, ax}.MulMat2(cv.state.transform.Mat2()).Atan2()
+	startAngle2 := BackendVec{ay, ax}.MulMat2(cv.state.transform.Mat2()).Atan2()
 	endAngle2 := startAngle2 + (endAngle - startAngle)
 	cv.path.Ellipse(tf[0], tf[1], radiusX, radiusY, rotation, startAngle2, endAngle2, anticlockwise)
 }
@@ -96,24 +94,24 @@ func (cv *Canvas) StrokePath(path *Path2D) {
 		p: make([]pathPoint, len(path.p)),
 	}
 	copy(path2.p, path.p)
-	cv.strokePath(&path2, cv.state.transform, backendbase.Mat{}, false)
+	cv.strokePath(&path2, cv.state.transform, BackendMat{}, false)
 }
 
-func (cv *Canvas) strokePath(path *Path2D, tf backendbase.Mat, inv backendbase.Mat, doInv bool) {
+func (cv *Canvas) strokePath(path *Path2D, tf BackendMat, inv BackendMat, doInv bool) {
 	if len(path.p) == 0 {
 		return
 	}
 
-	var triBuf [500]backendbase.Vec
+	var triBuf [500]BackendVec
 	tris := cv.strokeTris(path, tf, inv, doInv, triBuf[:0])
 
 	cv.drawShadow(tris, nil, true)
 
 	stl := cv.backendFillStyle(&cv.state.stroke, 1)
-	cv.b.Fill(&stl, tris, backendbase.MatIdentity, true)
+	cv.b.Fill(&stl, tris, BackendMatIdentity, true)
 }
 
-func (cv *Canvas) strokeTris(path *Path2D, tf backendbase.Mat, inv backendbase.Mat, doInv bool, target []backendbase.Vec) []backendbase.Vec {
+func (cv *Canvas) strokeTris(path *Path2D, tf BackendMat, inv BackendMat, doInv bool, target []BackendVec) []BackendVec {
 	if len(path.p) == 0 {
 		return target
 	}
@@ -138,7 +136,7 @@ func (cv *Canvas) strokeTris(path *Path2D, tf backendbase.Mat, inv backendbase.M
 	dashedPath := cv.applyLineDash(path.p)
 
 	start := true
-	var p0 backendbase.Vec
+	var p0 BackendVec
 	for _, p := range dashedPath {
 		if p.flags&pathMove != 0 {
 			p0 = p.pos
@@ -148,7 +146,7 @@ func (cv *Canvas) strokeTris(path *Path2D, tf backendbase.Mat, inv backendbase.M
 		p1 := p.pos
 
 		v0 := p1.Sub(p0).Norm()
-		v1 := backendbase.Vec{v0[1], -v0[0]}.Mulf(cv.state.lineWidth * 0.5)
+		v1 := BackendVec{v0[1], -v0[0]}.Mulf(cv.state.lineWidth * 0.5)
 		v0 = v0.Mulf(cv.state.lineWidth * 0.5)
 
 		lp0 := p0.Add(v1)
@@ -249,9 +247,9 @@ func (cv *Canvas) applyLineDash(path []pathPoint) []pathPoint {
 	return path2
 }
 
-func (cv *Canvas) lineJoint(p0, p1, p2, l0p0, l0p1, l0p2, l0p3 backendbase.Vec, tf backendbase.Mat, tris []backendbase.Vec) []backendbase.Vec {
+func (cv *Canvas) lineJoint(p0, p1, p2, l0p0, l0p1, l0p2, l0p3 BackendVec, tf BackendMat, tris []BackendVec) []BackendVec {
 	v2 := p1.Sub(p2).Norm()
-	v3 := backendbase.Vec{v2[1], -v2[0]}.Mulf(cv.state.lineWidth * 0.5)
+	v3 := BackendVec{v2[1], -v2[0]}.Mulf(cv.state.lineWidth * 0.5)
 
 	switch cv.state.lineJoin {
 	case Miter:
@@ -260,7 +258,7 @@ func (cv *Canvas) lineJoint(p0, p1, p2, l0p0, l0p1, l0p2, l0p3 backendbase.Vec, 
 		l1p2 := p2.Add(v3)
 		l1p3 := p1.Add(v3)
 
-		var ip0, ip1 backendbase.Vec
+		var ip0, ip1 BackendVec
 		if l0p1.Sub(l1p1).LenSqr() < 0.000000001 {
 			ip0 = l0p1.Sub(l1p1).Mulf(0.5).Add(l1p1)
 		} else {
@@ -316,7 +314,7 @@ func (cv *Canvas) lineJoint(p0, p1, p2, l0p0, l0p1, l0p2, l0p3 backendbase.Vec, 
 	return tris
 }
 
-func (cv *Canvas) addCircleTris(center backendbase.Vec, radius float64, tf backendbase.Mat, tris []backendbase.Vec) []backendbase.Vec {
+func (cv *Canvas) addCircleTris(center BackendVec, radius float64, tf BackendMat, tris []BackendVec) []BackendVec {
 	step := 6 / radius
 	if step > 0.8 {
 		step = 0.8
@@ -324,26 +322,26 @@ func (cv *Canvas) addCircleTris(center backendbase.Vec, radius float64, tf backe
 		step = 0.05
 	}
 	centertf := center.MulMat(tf)
-	p0 := backendbase.Vec{center[0], center[1] + radius}.MulMat(tf)
+	p0 := BackendVec{center[0], center[1] + radius}.MulMat(tf)
 	for angle := step; angle <= math.Pi*2+step; angle += step {
 		s, c := math.Sincos(angle)
-		p1 := backendbase.Vec{center[0] + s*radius, center[1] + c*radius}.MulMat(tf)
+		p1 := BackendVec{center[0] + s*radius, center[1] + c*radius}.MulMat(tf)
 		tris = append(tris, centertf, p0, p1)
 		p0 = p1
 	}
 	return tris
 }
 
-func lineIntersection(a0, a1, b0, b1 backendbase.Vec) (backendbase.Vec, float64, float64) {
+func lineIntersection(a0, a1, b0, b1 BackendVec) (BackendVec, float64, float64) {
 	va := a1.Sub(a0)
 	vb := b1.Sub(b0)
 
 	if (va[0] == 0 && vb[0] == 0) || (va[1] == 0 && vb[1] == 0) || (va[0] == 0 && va[1] == 0) || (vb[0] == 0 && vb[1] == 0) {
-		return backendbase.Vec{}, float64(math.Inf(1)), float64(math.Inf(1))
+		return BackendVec{}, float64(math.Inf(1)), float64(math.Inf(1))
 	}
 	d := va[1]*vb[0] - va[0]*vb[1]
 	if d == 0 {
-		return backendbase.Vec{}, float64(math.Inf(1)), float64(math.Inf(1))
+		return BackendVec{}, float64(math.Inf(1)), float64(math.Inf(1))
 	}
 	p := (vb[1]*(a0[0]-b0[0]) - a0[1]*vb[0] + b0[1]*vb[0]) / d
 	var q float64
@@ -356,7 +354,7 @@ func lineIntersection(a0, a1, b0, b1 backendbase.Vec) (backendbase.Vec, float64,
 	return a0.Add(va.Mulf(p)), p, q
 }
 
-func linePointDistSqr(a, b, p backendbase.Vec) float64 {
+func linePointDistSqr(a, b, p BackendVec) float64 {
 	v := b.Sub(a)
 	vl := v.Len()
 	vn := v.Divf(vl)
@@ -367,7 +365,7 @@ func linePointDistSqr(a, b, p backendbase.Vec) float64 {
 
 // Fill fills the current path with the current FillStyle
 func (cv *Canvas) Fill() {
-	cv.fillPath(&cv.path, backendbase.MatIdentity)
+	cv.fillPath(&cv.path, BackendMatIdentity)
 }
 
 // FillPath fills the given path with the current FillStyle
@@ -376,23 +374,23 @@ func (cv *Canvas) FillPath(path *Path2D) {
 }
 
 // FillPath fills the given path with the current FillStyle
-func (cv *Canvas) fillPath(path *Path2D, tf backendbase.Mat) {
+func (cv *Canvas) fillPath(path *Path2D, tf BackendMat) {
 	if len(path.p) < 3 {
 		return
 	}
 
-	var tris []backendbase.Vec
-	var triBuf [500]backendbase.Vec
+	var tris []BackendVec
+	var triBuf [500]BackendVec
 	if path.standalone && path.fillCache != nil {
 		tris = path.fillCache
 	} else {
 		if path.standalone {
-			tris = make([]backendbase.Vec, 0, 500)
+			tris = make([]BackendVec, 0, 500)
 		} else {
 			tris = triBuf[:0]
 		}
 		runSubPaths(path.p, true, func(sp []pathPoint) bool {
-			tris = appendSubPathTriangles(tris, backendbase.MatIdentity, sp)
+			tris = appendSubPathTriangles(tris, BackendMatIdentity, sp)
 			return false
 		})
 		if path.standalone {
@@ -410,7 +408,7 @@ func (cv *Canvas) fillPath(path *Path2D, tf backendbase.Mat) {
 	cv.b.Fill(&stl, tris, tf, false)
 }
 
-func appendSubPathTriangles(tris []backendbase.Vec, mat backendbase.Mat, path []pathPoint) []backendbase.Vec {
+func appendSubPathTriangles(tris []BackendVec, mat BackendMat, path []pathPoint) []BackendVec {
 	last := path[len(path)-1]
 	if last.flags&pathIsConvex != 0 {
 		p0, p1 := path[0].pos.MulMat(mat), path[1].pos.MulMat(mat)
@@ -437,15 +435,15 @@ func appendSubPathTriangles(tris []backendbase.Vec, mat backendbase.Mat, path []
 // Clip uses the current path to clip any further drawing. Use Save/Restore to
 // remove the clipping again
 func (cv *Canvas) Clip() {
-	cv.clip(&cv.path, backendbase.MatIdentity)
+	cv.clip(&cv.path, BackendMatIdentity)
 }
 
-func (cv *Canvas) clip(path *Path2D, tf backendbase.Mat) {
+func (cv *Canvas) clip(path *Path2D, tf BackendMat) {
 	if len(path.p) < 3 {
 		return
 	}
 
-	var buf [500]backendbase.Vec
+	var buf [500]BackendVec
 
 	if path.p[len(path.p)-1].flags&pathIsRect != 0 {
 		cv.state.clip.p = make([]pathPoint, len(path.p))
@@ -490,10 +488,10 @@ func (cv *Canvas) Rect(x, y, w, h float64) {
 
 // StrokeRect draws a rectangle using the current stroke style
 func (cv *Canvas) StrokeRect(x, y, w, h float64) {
-	v0 := backendbase.Vec{x, y}
-	v1 := backendbase.Vec{x + w, y}
-	v2 := backendbase.Vec{x + w, y + h}
-	v3 := backendbase.Vec{x, y + h}
+	v0 := BackendVec{x, y}
+	v1 := BackendVec{x + w, y}
+	v2 := BackendVec{x + w, y + h}
+	v3 := BackendVec{x, y + h}
 	var p [5]pathPoint
 	p[0] = pathPoint{pos: v0, flags: pathMove | pathAttach, next: v1}
 	p[1] = pathPoint{pos: v1, next: v2, flags: pathAttach}
@@ -501,31 +499,31 @@ func (cv *Canvas) StrokeRect(x, y, w, h float64) {
 	p[3] = pathPoint{pos: v3, next: v0, flags: pathAttach}
 	p[4] = pathPoint{pos: v0, next: v1, flags: pathAttach}
 	path := Path2D{p: p[:]}
-	cv.strokePath(&path, cv.state.transform, backendbase.Mat{}, false)
+	cv.strokePath(&path, cv.state.transform, BackendMat{}, false)
 }
 
 // FillRect fills a rectangle with the active fill style
 func (cv *Canvas) FillRect(x, y, w, h float64) {
-	p0 := cv.tf(backendbase.Vec{x, y})
-	p1 := cv.tf(backendbase.Vec{x, y + h})
-	p2 := cv.tf(backendbase.Vec{x + w, y + h})
-	p3 := cv.tf(backendbase.Vec{x + w, y})
+	p0 := cv.tf(BackendVec{x, y})
+	p1 := cv.tf(BackendVec{x, y + h})
+	p2 := cv.tf(BackendVec{x + w, y + h})
+	p3 := cv.tf(BackendVec{x + w, y})
 
-	data := [4]backendbase.Vec{{p0[0], p0[1]}, {p1[0], p1[1]}, {p2[0], p2[1]}, {p3[0], p3[1]}}
+	data := [4]BackendVec{{p0[0], p0[1]}, {p1[0], p1[1]}, {p2[0], p2[1]}, {p3[0], p3[1]}}
 
 	cv.drawShadow(data[:], nil, false)
 
 	stl := cv.backendFillStyle(&cv.state.fill, 1)
-	cv.b.Fill(&stl, data[:], backendbase.MatIdentity, false)
+	cv.b.Fill(&stl, data[:], BackendMatIdentity, false)
 }
 
 // ClearRect sets the color of the rectangle to transparent black
 func (cv *Canvas) ClearRect(x, y, w, h float64) {
-	p0 := cv.tf(backendbase.Vec{x, y})
-	p1 := cv.tf(backendbase.Vec{x, y + h})
-	p2 := cv.tf(backendbase.Vec{x + w, y + h})
-	p3 := cv.tf(backendbase.Vec{x + w, y})
-	data := [4]backendbase.Vec{{p0[0], p0[1]}, {p1[0], p1[1]}, {p2[0], p2[1]}, {p3[0], p3[1]}}
+	p0 := cv.tf(BackendVec{x, y})
+	p1 := cv.tf(BackendVec{x, y + h})
+	p2 := cv.tf(BackendVec{x + w, y + h})
+	p3 := cv.tf(BackendVec{x + w, y})
+	data := [4]BackendVec{{p0[0], p0[1]}, {p1[0], p1[1]}, {p2[0], p2[1]}, {p3[0], p3[1]}}
 
 	cv.b.Clear(data)
 }

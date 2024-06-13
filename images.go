@@ -9,8 +9,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
-	"github.com/tfriedel6/canvas/backend/backendbase"
 )
 
 // Image is a type holding information on an image loaded with the LoadImage
@@ -18,7 +16,7 @@ import (
 type Image struct {
 	src      interface{}
 	cv       *Canvas
-	img      backendbase.Image
+	img      BackendImage
 	deleted  bool
 	lastUsed time.Time
 }
@@ -161,9 +159,11 @@ func (img *Image) Replace(src interface{}) error {
 // loaded image with the same name parameter.
 //
 // The coordinates must be one of the following:
-//  DrawImage("image", dx, dy)
-//  DrawImage("image", dx, dy, dw, dh)
-//  DrawImage("image", sx, sy, sw, sh, dx, dy, dw, dh)
+//
+//	DrawImage("image", dx, dy)
+//	DrawImage("image", dx, dy, dw, dh)
+//	DrawImage("image", sx, sy, sw, sh, dx, dy, dw, dh)
+//
 // Where dx/dy/dw/dh are the destination coordinates and sx/sy/sw/sh are the
 // source coordinates
 func (cv *Canvas) DrawImage(image interface{}, coords ...float64) {
@@ -187,11 +187,11 @@ func (cv *Canvas) DrawImage(image interface{}, coords ...float64) {
 		dw, dh = coords[6], coords[7]
 	}
 
-	var data [4]backendbase.Vec
-	data[0] = cv.tf(backendbase.Vec{dx, dy})
-	data[1] = cv.tf(backendbase.Vec{dx, dy + dh})
-	data[2] = cv.tf(backendbase.Vec{dx + dw, dy + dh})
-	data[3] = cv.tf(backendbase.Vec{dx + dw, dy})
+	var data [4]BackendVec
+	data[0] = cv.tf(BackendVec{dx, dy})
+	data[1] = cv.tf(BackendVec{dx, dy + dh})
+	data[2] = cv.tf(BackendVec{dx + dw, dy + dh})
+	data[3] = cv.tf(BackendVec{dx + dw, dy})
 
 	cv.drawShadow(data[:], nil, false)
 
@@ -213,31 +213,31 @@ func (cv *Canvas) PutImageData(img *image.RGBA, x, y int) {
 type ImagePattern struct {
 	cv  *Canvas
 	img *Image
-	tf  backendbase.Mat
+	tf  BackendMat
 	rep imagePatternRepeat
-	ip  backendbase.ImagePattern
+	ip  BackendImagePattern
 }
 
 type imagePatternRepeat uint8
 
 // Image pattern repeat constants
 const (
-	Repeat   imagePatternRepeat = imagePatternRepeat(backendbase.Repeat)
-	RepeatX                     = imagePatternRepeat(backendbase.RepeatX)
-	RepeatY                     = imagePatternRepeat(backendbase.RepeatY)
-	NoRepeat                    = imagePatternRepeat(backendbase.NoRepeat)
+	Repeat   imagePatternRepeat = imagePatternRepeat(BackendRepeat)
+	RepeatX                     = imagePatternRepeat(BackendRepeatX)
+	RepeatY                     = imagePatternRepeat(BackendRepeatY)
+	NoRepeat                    = imagePatternRepeat(BackendNoRepeat)
 )
 
-func (ip *ImagePattern) data(tf backendbase.Mat) backendbase.ImagePatternData {
+func (ip *ImagePattern) data(tf BackendMat) BackendImagePatternData {
 	m := tf.Invert().Mul(ip.tf.Invert())
-	return backendbase.ImagePatternData{
+	return BackendImagePatternData{
 		Image: ip.img.img,
 		Transform: [9]float64{
 			m[0], m[2], m[4],
 			m[1], m[3], m[5],
 			0, 0, 1,
 		},
-		Repeat: backendbase.ImagePatternRepeat(ip.rep),
+		Repeat: BackendImagePatternRepeat(ip.rep),
 	}
 }
 
@@ -245,7 +245,7 @@ func (ip *ImagePattern) data(tf backendbase.Mat) backendbase.ImagePatternData {
 // to the given matrix. The matrix is a 3x3 matrix, but three
 // of the values are always identity values
 func (ip *ImagePattern) SetTransform(tf [6]float64) {
-	ip.tf = backendbase.Mat(tf)
+	ip.tf = BackendMat(tf)
 }
 
 // CreatePattern creates a new image pattern with the specified
@@ -255,7 +255,7 @@ func (cv *Canvas) CreatePattern(src interface{}, repeat imagePatternRepeat) *Ima
 		cv:  cv,
 		img: cv.getImage(src),
 		rep: repeat,
-		tf:  backendbase.Mat{1, 0, 0, 1, 0, 0},
+		tf:  BackendMat{1, 0, 0, 1, 0, 0},
 	}
 	if ip.img != nil {
 		ip.ip = cv.b.LoadImagePattern(ip.data(cv.state.transform))
