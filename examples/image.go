@@ -1,7 +1,6 @@
 package main
 
 import (
-	"image/png"
 	"math"
 	"os"
 
@@ -9,7 +8,7 @@ import (
 )
 
 func main() {
-	backend := canvas.NewSoftware(720, 720)
+	backend := canvas.NewBackend(720, 720)
 	cv := canvas.New(backend)
 
 	w, h := float64(cv.Width()), float64(cv.Height())
@@ -31,12 +30,13 @@ func main() {
 	cv.Arc(w*0.5, h*0.5, math.Min(w, h)*0.4, 0, math.Pi*2, false)
 	cv.Stroke()
 
-	f, err := os.OpenFile("result.png", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
-	if err != nil {
-		panic(err)
-	}
-	err = png.Encode(f, backend.Image)
-	if err != nil {
-		panic(err)
-	}
+	os.WriteFile("asdasfd.png", backend.Bytes(), 0o777)
+	// f, err := os.OpenFile("result.png", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// err = png.Encode(f, backend.Image)
+	// if err != nil {
+	// 	panic(err)
+	// }
 }

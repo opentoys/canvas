@@ -1,9 +1,11 @@
 package canvas
 
 import (
+	"bytes"
 	"image"
 	"image/color"
 	"image/draw"
+	"image/png"
 	"math"
 )
 
@@ -19,7 +21,7 @@ type SoftwareBackend struct {
 	w, h    int
 }
 
-func NewSoftware(w, h int) *SoftwareBackend {
+func NewBackend(w, h int) *SoftwareBackend {
 	b := &SoftwareBackend{}
 	b.SetSize(w, h)
 	return b
@@ -31,6 +33,12 @@ func (b *SoftwareBackend) SetSize(w, h int) {
 	b.clip = image.NewAlpha(image.Rect(0, 0, w, h))
 	b.stencil = image.NewAlpha(image.Rect(0, 0, w, h))
 	b.ClearClip()
+}
+
+func (b *SoftwareBackend) Bytes() []byte {
+	var buf bytes.Buffer
+	_ = png.Encode(&buf, b.Image)
+	return buf.Bytes()
 }
 
 func (b *SoftwareBackend) Size() (int, int) {

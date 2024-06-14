@@ -18,7 +18,7 @@ var usesw = false
 
 func run(t *testing.T, fn func(cv *canvas.Canvas)) {
 	var img *image.RGBA
-	backend := canvas.NewSoftware(100, 100)
+	backend := canvas.NewBackend(100, 100)
 	cv := canvas.New(backend)
 
 	cv.SetFillStyle("#000")
